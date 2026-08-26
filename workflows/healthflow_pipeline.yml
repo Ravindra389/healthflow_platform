@@ -1,0 +1,46 @@
+resources:
+  jobs:
+    healthflow_medallion_pipeline:
+      name: "HealthFlow Medallion Pipeline Run"
+      description: "End-to-end ingestion, silver standardization, and DQ validation."
+      
+      tasks:
+        # Task 1: Bronze Ingestion
+        - task_key: "01_bronze_ingestion"
+          notebook_task:
+            notebook_path: "../notebooks/01_bronze_batch.py"
+            source: "WORKSPACE"
+
+        # Task 2: Silver Patients (Depends on Bronze)
+        - task_key: "02_silver_patients"
+          depends_on:
+            - task_key: "01_bronze_ingestion"
+          notebook_task:
+            notebook_path: "../notebooks/05_silver_patients.py"
+            source: "WORKSPACE"
+
+        # Task 3: Silver Encounters
+        - task_key: "03_silver_encounters"
+          depends_on:
+            - task_key: "01_bronze_ingestion"
+          notebook_task:
+            notebook_path: "../notebooks/04_silver_encounters.py"
+            source: "WORKSPACE"
+
+        # Task 4: Silver Claims
+        - task_key: "04_silver_claims"
+          depends_on:
+            - task_key: "01_bronze_ingestion"
+          notebook_task:
+            notebook_path: "../notebooks/07_claims_silver.py"
+            source: "WORKSPACE"
+
+        # Task 5: Data Quality Suite (Runs after all Silver tables complete)
+        - task_key: "05_data_quality_tests"
+          depends_on:
+            - task_key: "02_silver_patients"
+            - task_key: "03_silver_encounters"
+            - task_key: "04_silver_claims"
+          notebook_task:
+            notebook_path: "../notebooks/00_dq_tests.py"
+            source: "WORKSPACE"
